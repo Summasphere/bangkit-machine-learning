@@ -12,7 +12,7 @@ def sanitize_text(text: str) -> str:
     return text.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
 
 
-def summarize_text(text: str) -> str:
+def summarize_text(text: str) -> dict:
     text = sanitize_text(text)
 
     generation_config = {
@@ -54,7 +54,10 @@ def summarize_text(text: str) -> str:
     for attempt in range(retries):
         try:
             response = chat_session.send_message(text)
-            return response.text
+            response_lines = response.text.split("\n")
+            title = response_lines[0]
+            summary = "\n".join(response_lines[1:]).strip()
+            return {"title": title, "summary": summary}
         except InternalServerError:
             if attempt < retries - 1:
                 time.sleep(2**attempt)
