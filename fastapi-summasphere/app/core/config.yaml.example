@@ -1,0 +1,9 @@
+GEMINI_API_KEY_COLLECTION:
+- - YOUR_OWN_GEMINI_API_TOKEN
+  - YOUR_ACCOUNT_IDENTIFIER
+generation_config:
+  max_output_tokens: 8192
+  response_mime_type: text/plain
+  temperature: 1
+  top_k: 64
+  top_p: 0.95
