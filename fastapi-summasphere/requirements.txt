@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+keras_nlp
+google-generativeai
+PyPDF2
+nltk
+matplotlib
+PyYAML
+wordcloud
+requests
+beautifulsoup4
