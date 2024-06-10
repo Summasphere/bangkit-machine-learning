@@ -49,9 +49,7 @@ async def analyze(
             input_text = url
         elif file:
             input_text = await file.read()
-            print(
-                f"Read file content: {input_text[:100]}..."
-            )  # Print first 100 bytes for debugging
+            # print(f"Read file content: {input_text[:100]}...")  # Debug PDF
         else:
             return JSONResponse(
                 status_code=400, content={"message": "No input provided."}

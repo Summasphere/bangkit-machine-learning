@@ -4,119 +4,34 @@ import string
 from collections import Counter
 from io import BytesIO
 
-import google.generativeai as genai
 import matplotlib.pyplot as plt
-import yaml
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from wordcloud import WordCloud
 
-from ..utils.helpers import process_url, sanitize_text, string_to_object
+from ..utils.common import GeminiLLM
+from ..utils.helpers import process_url, string_to_object
 
-POINTER = 0
 
-
-class TopicModelling:
+class TopicModelling(GeminiLLM):
     def __init__(self, configs_path="configs/config.yaml"):
-        with open(configs_path, "r") as file:
-            self.config = yaml.safe_load(file)
-        self.api_key = self.config["GEMINI_API_KEY_COLLECTION"]
-        self.generation_conf = self.config["generation_config"]
-        self.safety_settings = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-        ]
+        super().__init__(configs_path)
+        self.maximum_try = 10
 
-    def pick_random_key(self):
-        global POINTER
-        if self.api_key:
-            pair_api_key = self.api_key[POINTER]
-            POINTER = (POINTER + 1) % len(self.api_key)  # move to the next
-            api_key, email_name = pair_api_key
-            print(f"Using API Key from -> {email_name}")
-            return api_key
-        else:
-            return "No more API keys available."
-
-    def process_text(self, input_text, mode="text"):
-        if mode == "pdf":
-            input_text = sanitize_text(
-                input_text.decode("latin1")
-            )  # Adjust decoding as necessary
-        elif mode == "link":
-            input_text = process_url(input_text)
-
-        print(input_text)
-
-        api_key = self.pick_random_key()
-        genai.configure(api_key=api_key)
-
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            safety_settings=self.safety_settings,
-            generation_config=self.generation_conf,
-            system_instruction="Objective: Analyze the 5 most related topics in the text below. Explain each topic completely. Explain why the text fits the topic. Provide in JSON format.",
-        )
-
-        chat_session = model.start_chat(history=[])
-        response = chat_session.send_message(input_text)
-
-        response_text = response.text
+    def process_text(self, input_text):
+        system_instruction = f"""
+            Analyze the 5 most related topics in the text below. explain each topic completely. explain why the text fits the topic.
+            >> Constraint:
+            - minimum 100 words and maximum 500 words
+            - also explain how many percent of each topic is related to the text.
+            - provide in a formal, no-nonsense format so that these results can be used for academic purposes.
+            - to the point
+            - the output must be json format for example
+            {self.create_str_json_example(5)}
+            - do not provide any text outside of json
+            """.strip()
+        response_text = self.generate_result(input_text, system_instruction)
         return response_text
-
-    def run_analysis(self, text, mode="pdf", media="frontend"):
-        if mode == "pdf":
-            text = self.extract_text_from_pdf_buffer(text)
-        elif mode == "link":
-            text = process_url(text)
-        topic_dist = self.process_text(text)
-        topic_dist = string_to_object(
-            topic_dist[topic_dist.index("[") : topic_dist.rindex("]") + 1]
-        )
-        wordcloud_dict = self.wordcloud(text)
-
-        if media == "android":
-            topic_dist_img = self.barplot_to_base64(topic_dist)
-            wordcloud_img = self.wordcloud_to_base64(wordcloud_dict)
-            dict_analysis = {
-                "topic_distribution": topic_dist_img,
-                "wordcloud": wordcloud_img,
-            }
-        else:
-            dict_analysis = {
-                "topic_distribution": topic_dist,
-                "wordcloud": wordcloud_dict,
-            }
-
-        return dict_analysis
-
-    def extract_text_from_pdf_buffer(self, pdf_buffer):
-        from PyPDF2 import PdfReader
-
-        if isinstance(pdf_buffer, bytes):
-            pdf_buffer = BytesIO(pdf_buffer)  # Convert bytes to BytesIO
-
-        pdf_reader = PdfReader(pdf_buffer)
-        text = ""
-        for page_num in range(len(pdf_reader.pages)):
-            page = pdf_reader.pages[page_num]
-            text += page.extract_text()
-        text = sanitize_text(text)
-        return text
 
     def wordcloud(self, text):
         text = str(text).lower()
@@ -241,3 +156,41 @@ class TopicModelling:
         buffer.seek(0)
         img_str = base64.b64encode(buffer.read()).decode("utf-8")
         return img_str
+
+    def run_analysis(self, text, mode="pdf", media="frontend"):
+        if mode == "pdf":
+            text = self.extract_text_from_pdf_buffer(text)
+        elif mode == "link":
+            text = process_url(text)
+
+        for _ in range(self.maximum_try):
+            try:
+                topic_dist = self.process_text(text)
+                break
+            except Exception as e:
+                print(f"error: {e}")
+        try:
+            topic_dist = string_to_object(
+                topic_dist[topic_dist.index("[") : topic_dist.rindex("]") + 1]
+            )
+        except Exception:
+            topic_dist = string_to_object(
+                topic_dist[topic_dist.index("{") : topic_dist.rindex("}") + 1]
+            )
+
+        wordcloud_dict = self.wordcloud(text)
+
+        if media == "android":
+            topic_dist_img = self.barplot_to_base64(topic_dist)
+            wordcloud_img = self.wordcloud_to_base64(wordcloud_dict)
+            dict_analysis = {
+                "topic_distribution": topic_dist_img,
+                "wordcloud": wordcloud_img,
+            }
+        else:
+            dict_analysis = {
+                "topic_distribution": topic_dist,
+                "wordcloud": wordcloud_dict,
+            }
+
+        return dict_analysis

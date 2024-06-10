@@ -1,62 +1,28 @@
-from io import BytesIO
+from ..utils.common import GeminiLLM
+from ..utils.helpers import process_url
 
-import google.generativeai as genai
-import yaml
+################### BART ############################
+# url = (
+#     "https://huggingface.co/mnabielap/bart-multinews/resolve/main/bart-multinews.keras"
+# )
+# local_path = "bart-multinews.keras"
+# os.system(f"wget {url} -O {local_path}")
+# class BartSummarizer:  # /summarize/bart
+#     def __init__(self, max_length=256):
+#         self.max_length = max_length
+#         self.bart_model = tf.keras.models.load_model(
+#             local_path, custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
+#         )
 
-from ..utils.helpers import process_url, sanitize_text
+#     def summarize(self, input_text):
+#         output = self.bart_model.generate(input_text, max_length=self.max_length)
+#         return output
 
-POINTER = 0  # Define POINTER globally
 
-
-class GeminiSummarizer:
+################### GEMINI ############################
+class GeminiSummarizer(GeminiLLM):
     def __init__(self, configs_path="configs/config.yaml"):
-        with open(configs_path, "r") as file:
-            self.config = yaml.safe_load(file)
-        self.api_key = self.config["GEMINI_API_KEY_COLLECTION"]
-        self.generation_conf = self.config["generation_config"]
-        self.safety_settings = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_LOW_AND_ABOVE",
-            },
-        ]
-
-    def pick_random_key(self):
-        global POINTER  # Use the global POINTER variable
-        if self.api_key:
-            pair_api_key = self.api_key[POINTER]
-            POINTER = (POINTER + 1) % len(self.api_key)  # move to the next
-            api_key, email_name = pair_api_key
-            print(f"Using API Key from -> {email_name}")
-            return api_key
-        else:
-            return "No more API keys available."
-
-    def extract_text_from_pdf_buffer(self, pdf_buffer):
-        from PyPDF2 import PdfReader
-
-        if isinstance(pdf_buffer, bytes):
-            pdf_buffer = BytesIO(pdf_buffer)  # Convert bytes to BytesIO
-
-        pdf_reader = PdfReader(pdf_buffer)
-        text = ""
-        for page_num in range(len(pdf_reader.pages)):
-            page = pdf_reader.pages[page_num]
-            text += page.extract_text()
-        text = sanitize_text(text)
-        return text
+        super().__init__(configs_path)
 
     def process_text(self, input_text, mode="text"):
         if mode == "pdf":
@@ -64,20 +30,18 @@ class GeminiSummarizer:
         elif mode == "link":
             input_text = process_url(input_text)
 
-        print(input_text)
-
-        api_key = self.pick_random_key()
-        genai.configure(api_key=api_key)
-
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            safety_settings=self.safety_settings,
-            generation_config=self.generation_conf,
-            system_instruction="Objective: Analyze the 5 most related topics in the text below. Explain each topic completely. Explain why the text fits the topic. Provide in JSON format.",
-        )
-
-        chat_session = model.start_chat(history=[])
-        response = chat_session.send_message(input_text)
-
-        response_text = response.text
+        system_instruction = 'Objective:\nYou are summarization application specifically designed for researchers to efficiently extract key information from academic papers. Researchers often face the challenge of sifting through numerous papers to find inspiration and relevant information, but only about 20% of a paper typically contains the critical insights they need. This application aims to expedite the literature review process by providing concise, targeted summaries focusing on the most valuable parts of each paper.\n\nKey Requirements:\n\nMethodology Summary: Clearly outline the research methods used, including experimental design, data collection, and analysis techniques.\n\nEquations: Highlight and extract every important equation if exists. The equations must be written in LaTeX so it can be rendered in markdown media. Do not let more than three equations on the same line, if there are more than three, put it in the new line. Make sure to always use the equation environment to write an equation that is given in a line, e.g. $$ H_ {k_p}=frac {Y_ {k_p}} {X_ {k_p}} $$. Also, make sure to be careful on writing equations from documents provided by user, because sometimes PDF breaks the latex format and you might write it wrong. Make sure to not forget every detail, for example you must write it like\n\n$$ A_{dot} = \\text{softmax} (  \n\\frac {QK^T} {\\sqrt{d_{model}}}  \n) V. $$  \n$$ A_{mem} = \\frac{σ(Q)M_{s-1}}\n{σ(Q)z_{s−1}} . $$  \n$$ M_{s} ← M_{s−1} + σ(K)^TV \\text{ and } z_{s} ← z_{s−1} + \\sum_{t=1}^{N} \nσ(K_{t}). $$  \n$$ M_{s} ← M_{s−1} + σ(K)^T(V − \\frac{σ(K)M_{s−1}}{σ(K)z_{s−1}}). $$\n\nMake sure to do deeper reasoning to implement the equation correctly, I know you render the equations from PDF directly, but use your knowledge to figure out how is it supposed to be written correctly. Do not just write what you saw directly.\n\nResults Summary: Highlight the main findings and outcomes of the research, emphasizing significant results and conclusions.\nCitations for Each Argument: Provide citations AND paper reference in APA style in the end of the summary, for key arguments and claims made within the paper to facilitate further reading and verification. The citation must be written in APA style, extract from the Reference Section in the input document if exists. REMEMBER, just provide the some needed citations and reference only, no need to provide all of the citations used on the paper.\n\nImportant Aspects of the Method: Identify and summarize critical aspects and innovations of the methodology that contribute to the research field.\n\nApplication Expectations:\n\nNon-Generic Summaries: The application should avoid general summaries (such as abstracts) and focus on specific sections that contain essential details for researchers.\nEfficiency and Accuracy: Ensure that the summarization process is fast and accurate, enabling researchers to quickly grasp the core contributions of each paper.\nUser-Centric Design: Tailor the application interface and features to meet the needs of researchers, allowing them to customize the type and depth of summaries they receive.\nOutcome:\nBy using you, researchers should be able to significantly reduce the time spent on literature reviews, thereby enhancing their productivity and enabling them to produce more research papers. The application should act as a valuable tool in accelerating the research process and improving the overall quality of academic work.\n\nYou are not allowed to answer another question aside summarization task. Expected responses:\n\nExample 1:\nUsers: "Hello"\nYou: <No response>\n\nExample 2:\nUsers: "Umm"\nYou: <No response>\n'
+        response_text = self.generate_result(input_text, system_instruction)
         return response_text
+
+    def run_gemini_summarizer(self, text, mode="text"):
+        if mode == "pdf":
+            text = self.extract_text_from_pdf_buffer(text)
+
+        for _ in range(self.maximum_try):
+            try:
+                summary = self.process_text(text)
+                return summary
+            except Exception as e:
+                print(f"error: {e}")
+        return "Failed to summarize the text. Please try again later."
