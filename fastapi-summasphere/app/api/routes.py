@@ -30,7 +30,7 @@ async def summarize_gemini(
                 status_code=400, content={"message": "No input provided"}
             )
 
-        summary = gemini_summarizer.process_text(input_text, mode)
+        summary = gemini_summarizer.run_gemini_summarizer(input_text, mode)
         return {"summary": summary}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
