@@ -9,7 +9,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from wordcloud import WordCloud
 
-from ..utils.common import GeminiLLM
+from ..services.gemini_llm import GeminiLLM
 from ..utils.helpers import process_url, string_to_object
 
 
