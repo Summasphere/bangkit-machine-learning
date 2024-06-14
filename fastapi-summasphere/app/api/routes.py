@@ -1,5 +1,5 @@
 from app.services.analyzer import TopicModelling
-from app.services.summarizer import GeminiSummarizer
+from app.services.summarizer import GeminiSummarizer, BartSummarizer
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
@@ -7,11 +7,12 @@ router = APIRouter()
 
 gemini_summarizer = GeminiSummarizer()
 topic_modeller = TopicModelling()
+bart_summarizer = None # BartSummarizer()
 
-
-@router.post("/summarize/gemini")
-async def summarize_gemini(
-    mode: str = Form(...),
+@router.post("/summarize")
+async def summarize(
+    mode: str = Form(...),          # (text, pdf, link)
+    model: str = Form(None),        # (bart, gemini)
     text: str = Form(None),
     file: UploadFile = Form(None),
     url: str = Form(None),
@@ -30,7 +31,11 @@ async def summarize_gemini(
                 status_code=400, content={"message": "No input provided"}
             )
 
-        summary = gemini_summarizer.run_gemini_summarizer(input_text, mode)
+        if model and str(model).strip()=="bart":
+            summary = bart_summarizer.summarize(input_text)
+        else:
+            summary = gemini_summarizer.run_gemini_summarizer(input_text, mode)
+        
         return {"summary": summary}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
@@ -38,18 +43,17 @@ async def summarize_gemini(
 
 @router.post("/analyzer")
 async def analyze(
-    media: str = Form(...),
-    mode: str = Form(...),
+    media: str = Form(...),     # (frontend, android)
+    mode: str = Form(...),      # (pdf, link)
     url: str = Form(None),
     file: UploadFile = File(None),
 ):
     try:
         input_text = None
-        if url:
+        if url and str(mode).strip()=="link":
             input_text = url
-        elif file:
+        elif file and str(mode).strip()=="pdf":
             input_text = await file.read()
-            # print(f"Read file content: {input_text[:100]}...")  # Debug PDF
         else:
             return JSONResponse(
                 status_code=400, content={"message": "No input provided."}
