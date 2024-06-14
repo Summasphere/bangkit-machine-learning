@@ -7,7 +7,7 @@ from PyPDF2 import PdfReader
 
 from ..utils.helpers import sanitize_text
 
-POINTER = 10  # Define POINTER globally
+POINTER = 0  # Define POINTER globally
 GEMINI_API_KEY_COLLECTION = None
 
 class GeminiLLM:
