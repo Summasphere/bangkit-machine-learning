@@ -1,4 +1,5 @@
 from io import BytesIO
+import random
 
 import google.generativeai as genai
 import yaml
@@ -6,14 +7,17 @@ from PyPDF2 import PdfReader
 
 from ..utils.helpers import sanitize_text
 
-POINTER = 0  # Define POINTER globally
-
+POINTER = 10  # Define POINTER globally
+GEMINI_API_KEY_COLLECTION = None
 
 class GeminiLLM:
     def __init__(self, configs_path="configs/config.yaml"):
+        global GEMINI_API_KEY_COLLECTION
         with open(configs_path, "r") as file:
             self.config = yaml.safe_load(file)
-        self.api_key = self.config["GEMINI_API_KEY_COLLECTION"]
+        GEMINI_API_KEY_COLLECTION = self.config["GEMINI_API_KEY_COLLECTION"]
+        random.shuffle(GEMINI_API_KEY_COLLECTION)
+        self.api_key_collection = GEMINI_API_KEY_COLLECTION
         self.generation_conf = self.config["generation_config"]
         self.safety_settings = [
             {
@@ -36,9 +40,9 @@ class GeminiLLM:
 
     def pick_random_key(self):
         global POINTER  # Use the global POINTER variable
-        if self.api_key:
-            pair_api_key = self.api_key[POINTER]
-            POINTER = (POINTER + 1) % len(self.api_key)  # move to the next
+        if self.api_key_collection:
+            pair_api_key = self.api_key_collection[POINTER]
+            POINTER = (POINTER + 1) % len(self.api_key_collection)  # move to the next
             api_key, email_name = pair_api_key
             print(f"Using API Key from -> {email_name}")
             return api_key
