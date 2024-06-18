@@ -1,4 +1,10 @@
 ## Run
+
+```py
+fastapi dev app.py
+```
+
+OR 
 ```py
 uvicorn app.main:app --reload
 ```
