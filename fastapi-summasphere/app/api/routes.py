@@ -7,7 +7,7 @@ router = APIRouter()
 
 gemini_summarizer = GeminiSummarizer()
 topic_modeller = TopicModelling()
-bart_summarizer = None # BartSummarizer()
+bart_summarizer = BartSummarizer()
 
 @router.post("/summarize")
 async def summarize(

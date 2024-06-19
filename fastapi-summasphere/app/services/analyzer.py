@@ -119,43 +119,44 @@ class TopicModelling(GeminiLLM):
             temp_dict[key] = val
         return temp_dict
 
+    ######################## ANDROID UTILITY ########################
     def barplot_to_base64(self, data):
         # Extracting data for plotting
-        topics = [item["topic"] for item in data]
-        percentages = [item["percentage"] for item in data]
+        topics = [item['topic'] for item in data]
+        percentages = [item['percentage'] for item in data]
 
         # Creating the barplot
-        plt.figure(figsize=(10, 6))
-        plt.barh(topics, percentages, color="skyblue")
-        plt.xlabel("Percentage")
-        plt.ylabel("Topic")
-        plt.title("Distribution of Topics")
-
+        plt.figure(figsize=(10, 8))
+        plt.barh(topics, percentages, color='skyblue')
+        plt.xlabel('Percentage')
+        plt.ylabel('Topic')
+        plt.title('Distribution of Topics')
+        plt.gca().invert_yaxis()  # Invert y-axis to have the highest percentage on top
+        
         # Save the plot to a BytesIO object
         buf = BytesIO()
-        plt.savefig(buf, format="png")
+        plt.savefig(buf, format='png')
         buf.seek(0)
-
+        
         # Encode the BytesIO object to base64
-        img_base64 = base64.b64encode(buf.read()).decode("utf-8")
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
         buf.close()
-
+    
         return img_base64
 
     def wordcloud_to_base64(self, word_freq):
-        wordcloud = WordCloud(
-            width=800, height=400, background_color="white"
-        ).generate_from_frequencies(word_freq)
-        plt.figure(figsize=(10, 5))
-        plt.imshow(wordcloud, interpolation="bilinear")
-        plt.axis("off")
-
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
+        plt.figure(figsize=(15, 15))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        
         buffer = BytesIO()
-        plt.savefig(buffer, format="png")
+        plt.savefig(buffer, format='png')
         plt.close()
         buffer.seek(0)
-        img_str = base64.b64encode(buffer.read()).decode("utf-8")
+        img_str = base64.b64encode(buffer.read()).decode('utf-8')
         return img_str
+    ########################################################################
 
     def run_analysis(self, text, mode="pdf", media="frontend"):
         if mode == "pdf":
@@ -181,12 +182,10 @@ class TopicModelling(GeminiLLM):
         wordcloud_dict = self.wordcloud(text)
 
         if media == "android":
+            topic_desc = "\n".join([f"{i+1}. " + item["topic"] + "\n\n" + item['detail'] for (i, item) in enumerate(topic_dist)])
             topic_dist_img = self.barplot_to_base64(topic_dist)
             wordcloud_img = self.wordcloud_to_base64(wordcloud_dict)
-            dict_analysis = {
-                "topic_distribution": topic_dist_img,
-                "wordcloud": wordcloud_img,
-            }
+            dict_analysis = {"topic_distribution": topic_dist_img, "topic_desc": topic_desc, "wordcloud": wordcloud_img}
         else:
             dict_analysis = {
                 "topic_distribution": topic_dist,
