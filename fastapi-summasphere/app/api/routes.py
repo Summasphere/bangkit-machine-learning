@@ -2,6 +2,7 @@ from app.services.analyzer import TopicModelling
 from app.services.summarizer import GeminiSummarizer, BartSummarizer
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
+from ..utils.helpers import process_url
 
 router = APIRouter()
 
@@ -32,6 +33,10 @@ async def summarize(
             )
 
         if model and str(model).strip()=="bart":
+            if mode == "pdf":
+                input_text = gemini_summarizer.extract_text_from_pdf_buffer(input_text)
+            elif mode == "link":
+                input_text = process_url(input_text)
             summary = bart_summarizer.summarize(input_text)
         else:
             summary = gemini_summarizer.run_gemini_summarizer(input_text, mode)
