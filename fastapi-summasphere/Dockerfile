@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Copy the requirements file and install dependencies
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --default-timeout=1000 --no-cache-dir
 
 # Copy the rest of the application code
 COPY . .

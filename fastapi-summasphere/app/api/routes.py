@@ -10,6 +10,10 @@ gemini_summarizer = GeminiSummarizer()
 topic_modeller = TopicModelling()
 bart_summarizer = BartSummarizer()
 
+@router.get('/healthz')
+def healthz():
+    return "OK"
+
 @router.post("/summarize")
 async def summarize(
     mode: str = Form(...),          # (text, pdf, link)
