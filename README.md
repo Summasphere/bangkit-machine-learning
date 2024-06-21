@@ -32,9 +32,29 @@ The source code of machine learning model's API of Summasphere smart guide in or
 - Open terminal and go to fastapi-summasphere directory by typing<br>
 `cd fastapi-summasphere`
 - Type `py -m venv env` to create python virtual environment
-- Type `env\Scripts\activate.bat` to activate python virtual environment
+- Activate python virtual environment
+    ```bash
+    <!-- Windows -->
+    env\Scripts\activate.bat
+
+    <!-- Linux -->
+    source env/bin/activate
+    ```
 - Type `pip install -r requirements.txt` to install neccesary library
-- Run the app `python main.py` or `py main.py`
+- Run the app
+    > These examples run the server program (e.g Uvicorn), starting a single process, listening on all the IPs (0.0.0.0) on a predefined port (e.g. 80)
+    ```py
+    fastapi dev app.py
+
+    <!-- For Production -->
+    fastapi run 
+
+    OR 
+
+    uvicorn app.main:app --reload
+
+    ```
+
 
 # FastAPI Docs
 <p align="center">
