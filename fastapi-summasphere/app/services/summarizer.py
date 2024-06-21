@@ -14,8 +14,8 @@ class BartSummarizer:  # /summarize/bart
     def __init__(self, max_length=256):
         self.max_length = max_length
         self.bart_model = tf.keras.models.load_model(
-            local_path, 
-            custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
+            local_path
+            # ,custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
         )
 
     def summarize(self, input_text):
