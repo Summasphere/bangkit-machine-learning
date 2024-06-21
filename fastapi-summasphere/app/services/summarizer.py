@@ -10,7 +10,7 @@ URL = (
 )
 LOCAL_PATH = "bart-multinews.keras"
 
-class BartSummarizer:  # /summarize/bart
+class BartSummarizer:
     def __init__(self, max_length=256):
         self.download_model()
         self.max_length = max_length
