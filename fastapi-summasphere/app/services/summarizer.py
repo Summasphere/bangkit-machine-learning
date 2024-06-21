@@ -3,6 +3,7 @@ import urllib.request
 import tensorflow as tf
 from ..services.gemini_llm import GeminiLLM
 from ..utils.helpers import process_url
+import keras_nlp
 
 ################### BART ############################
 URL = (
@@ -15,8 +16,8 @@ class BartSummarizer:
         self.download_model()
         self.max_length = max_length
         self.bart_model = tf.keras.models.load_model(
-            LOCAL_PATH 
-            # custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
+            LOCAL_PATH,
+            custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
         )
 
     def download_model(self):
