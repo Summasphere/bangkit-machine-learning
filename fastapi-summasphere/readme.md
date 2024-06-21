@@ -1,6 +1,12 @@
 ## Run
 
 ```py
+py main.py
+```
+
+OR 
+
+```py
 fastapi dev app.py
 ```
 
@@ -11,16 +17,16 @@ uvicorn app.main:app --reload
 
 ## FastAPI Docs
 <p align="center">
-    <img src="./img/fastapi-docs.png" width='90%'>
+    <img src="./img/fastapi-docs.jpg" width='90%'>
 
 ## Endpoint Testing
-- **/api/summarize/gemini** for URL
+- **/api/summarize** for URL
 <p align="center">
-    <img src="./img/slash-summarize link.png" width='70%'>
+    <img src="./img/slash-summarize link.jpg" width='70%'>
 
-- **/api/summarize/gemini** for PDF
+- **/api/summarize** for PDF
 <p align="center">
-    <img src="./img/slash-summarize pdf.png" width='70%'>
+    <img src="./img/slash-summarize pdf.jpg" width='70%'>
 
 - **/api/analyzer** for URL
 <p align="center">

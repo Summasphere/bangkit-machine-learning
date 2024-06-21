@@ -1,22 +1,31 @@
 import os
-import keras_nlp
+import urllib.request
 import tensorflow as tf
 from ..services.gemini_llm import GeminiLLM
 from ..utils.helpers import process_url
 
 ################### BART ############################
-url = (
+URL = (
     "https://huggingface.co/mnabielap/bart-multinews/resolve/main/bart-multinews.keras"
 )
-local_path = "bart-multinews.keras"
-# os.system(f"wget {url} -O {local_path}") # download from huggingface
-class BartSummarizer:  # /summarize/bart
+LOCAL_PATH = "bart-multinews.keras"
+
+class BartSummarizer:
     def __init__(self, max_length=256):
+        self.download_model()
         self.max_length = max_length
         self.bart_model = tf.keras.models.load_model(
-            local_path
-            # ,custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
+            LOCAL_PATH 
+            # custom_objects={"BartSeq2SeqLM": keras_nlp.models.BartSeq2SeqLM}
         )
+
+    def download_model(self):
+        if not os.path.exists(LOCAL_PATH):
+            print(f"File {LOCAL_PATH} not found locally. Downloading from {URL}...")
+            urllib.request.urlretrieve(URL, LOCAL_PATH)
+            print(f"Downloaded {LOCAL_PATH} successfully.")
+        else:
+            print(f"File {LOCAL_PATH} already exists locally. No need to download.")
 
     def summarize(self, input_text):
         output = self.bart_model.generate(input_text, max_length=self.max_length)

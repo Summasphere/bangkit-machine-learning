@@ -8,7 +8,7 @@ router = APIRouter()
 
 gemini_summarizer = GeminiSummarizer()
 topic_modeller = TopicModelling()
-bart_summarizer = BartSummarizer()
+bart_summarizer = BartSummarizer() # bart_summarizer = None # change to none if you want to skip bart_summarizer
 
 @router.get('/healthz')
 def healthz():
